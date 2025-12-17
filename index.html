@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Play2Rewards.online - Earn Gift Cards Playing Games</title>
+    <meta name="description" content="Earn REAL Gift Cards INSTANTLY! Play curated hits, rack up Units, cash out Amazon/PayPal rewards. #1 in USA, AU, KR, DE, CA!" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <!-- Babel for in-browser compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: #0f172a;
+        overflow-x: hidden;
+      }
+      h1, h2, h3, h4, h5, h6, .font-orbitron {
+        font-family: 'Orbitron', sans-serif;
+      }
+      .perspective-1000 {
+        perspective: 1000px;
+      }
+      .transform-style-3d {
+        transform-style: preserve-3d;
+      }
+      .backface-hidden {
+        backface-visibility: hidden;
+      }
+      .rotate-y-180 {
+        transform: rotateY(180deg);
+      }
+      .neon-glow {
+        text-shadow: 0 0 10px rgba(168, 85, 247, 0.7), 0 0 20px rgba(168, 85, 247, 0.5);
+      }
+      .coin-glow {
+        box-shadow: 0 0 15px rgba(250, 204, 21, 0.6);
+      }
+    </style>
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "lucide-react": "https://esm.sh/lucide-react@0.263.1",
+    "framer-motion": "https://esm.sh/framer-motion@10.12.16",
+    "@google/genai": "https://esm.sh/@google/genai@0.0.12",
+    "react/": "https://esm.sh/react@^19.2.3/"
+  }
+}
+</script>
+  <link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-slate-900 text-white antialiased">
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module" data-presets="react,typescript">
+      import React, { useState, useEffect } from 'react';
+      import ReactDOM from 'react-dom/client';
+      import { motion, AnimatePresence } from 'framer-motion';
+      import { 
+        Gamepad2, Gift, Zap, Smartphone, Trophy, Star, 
+        DollarSign, ShieldCheck, Download, ChevronRight, 
+        Sparkles, Bot, ArrowRight, Loader 
+      } from 'lucide-react';
+      import { GoogleGenAI } from '@google/genai';
+
+      // --- Types ---
+      interface GiftCard {
+        id: number;
+        name: string;
+        value: string;
+        image: string;
+        color: string;
+      }
+
+      interface Testimonial {
+        id: number;
+        name: string;
+        country: string;
+        text: string;
+        rating: number;
+        avatar: string;
+      }
+
+      interface Stat {
+        label: string;
+        value: string;
+        icon: any; 
+      }
+
+      // --- Constants ---
+      const SMART_LINK = "https://adbleumedia.com/smartlink/XXXXX";
+
+      const GIFT_CARDS: GiftCard[] = [
+        { id: 1, name: "Amazon", value: "$25", image: "https://picsum.photos/300/180?random=1", color: "from-yellow-500 to-orange-600" },
+        { id: 2, name: "PayPal", value: "$50", image: "https://picsum.photos/300/180?random=2", color: "from-blue-600 to-blue-800" },
+        { id: 3, name: "Uber", value: "$15", image: "https://picsum.photos/300/180?random=3", color: "from-gray-800 to-black" },
+        { id: 4, name: "Google Play", value: "$10", image: "https://picsum.photos/300/180?random=4", color: "from-green-500 to-teal-600" },
+        { id: 5, name: "Visa", value: "$100", image: "https://picsum.photos/300/180?random=5", color: "from-blue-700 to-indigo-900" },
+      ];
+
+      const TESTIMONIALS: Testimonial[] = [
+        { id: 1, name: "Mike T.", country: "USA", text: "Cashed out $50 Amazon in just 1 week! Actually legit.", rating: 5, avatar: "https://picsum.photos/50/50?random=10" },
+        { id: 2, name: "Sarah J.", country: "AU", text: "Best way to kill time on the train. Got my coffee money sorted.", rating: 5, avatar: "https://picsum.photos/50/50?random=11" },
+        { id: 3, name: "Kim S.", country: "KR", text: "Lots of fun games I would play anyway. The rewards are a bonus!", rating: 5, avatar: "https://picsum.photos/50/50?random=12" },
+      ];
+
+      const STATS: Stat[] = [
+        { label: "Downloads", value: "10M+", icon: Smartphone },
+        { label: "Paid Out", value: "$150M+", icon: DollarSign },
+        { label: "Trust Score", value: "4.8/5", icon: ShieldCheck },
+      ];
+
+      // --- Components ---
+
+      const Hero: React.FC = () => {
+        const [timeLeft, setTimeLeft] = useState({ hours: 4, minutes: 59, seconds: 0 });
+
+        useEffect(() => {
+          const timer = setInterval(() => {
+            setTimeLeft(prev => {
+              let { hours, minutes, seconds } = prev;
+              if (seconds > 0) seconds--;
+              else {
+                seconds = 59;
+                if (minutes > 0) minutes--;
+                else {
+                  minutes = 59;
+                  if (hours > 0) hours--;
+                }
+              }
+              return { hours, minutes, seconds };
+            });
+          }, 1000);
+          return () => clearInterval(timer);
+        }, []);
+
+        const formatTime = (num: number) => num.toString().padStart(2, '0');
+
+        return (
+          <section className="relative w-full min-h-screen flex flex-col items-center justify-center overflow-hidden bg-slate-900 pt-20">
+            {/* Background Gradients */}
+            <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
+              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-900 via-slate-900 to-blue-900" />
+              <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-600 rounded-full blur-[120px] opacity-30 animate-pulse" />
+              <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-blue-500 rounded-full blur-[120px] opacity-20" />
+            </div>
+
+            {/* Floating Particles */}
+            <AnimatePresence>
+              {[...Array(15)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ y: -100, opacity: 0, x: Math.random() * 1000 - 500 }}
+                  animate={{ 
+                    y: window.innerHeight + 100, 
+                    opacity: [0, 1, 0], 
+                    rotate: 360 
+                  }}
+                  transition={{ 
+                    duration: Math.random() * 5 + 5, 
+                    repeat: Infinity, 
+                    delay: Math.random() * 5,
+                    ease: "linear"
+                  }}
+                  className="absolute z-0 pointer-events-none"
+                >
+                  {i % 2 === 0 ? (
+                    <div className="w-8 h-8 rounded-full bg-yellow-400 coin-glow border-2 border-yellow-200 flex items-center justify-center text-xs font-bold text-yellow-900">$</div>
+                  ) : (
+                    <Gift className="text-purple-400 w-8 h-8 opacity-50" />
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+
+            <div className="relative z-10 container mx-auto px-4 text-center">
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+              >
+                <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-purple-500/30 mb-6">
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                  </span>
+                  <span className="text-sm font-semibold text-green-300 tracking-wider">Join 10M+ Players Earning NOW</span>
+                </div>
+
+                <h1 className="text-4xl md:text-6xl lg:text-7xl font-black font-orbitron leading-tight mb-6 tracking-tight">
+                  Play Games <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 neon-glow">→</span> Earn <br className="hidden md:block" />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500 neon-glow">REAL GIFT CARDS</span>
+                  <br />INSTANTLY! 🚀
+                </h1>
+
+                <p className="text-lg md:text-2xl text-slate-300 max-w-3xl mx-auto mb-8 font-light leading-relaxed">
+                  Discover curated hits, rack up Units, and cash out Amazon, PayPal, & Uber rewards. 
+                  <span className="block mt-2 font-semibold text-white">#1 in USA 🇺🇸 AU 🇦🇺 KR 🇰🇷 DE 🇩🇪 CA 🇨🇦</span>
+                </p>
+
+                <div className="flex flex-col md:flex-row items-center justify-center gap-4 mb-12">
+                  <a 
+                    href={SMART_LINK}
+                    className="group relative px-8 py-5 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl font-bold text-xl shadow-[0_0_40px_rgba(124,58,237,0.5)] hover:shadow-[0_0_60px_rgba(124,58,237,0.8)] transition-all duration-300 transform hover:scale-105 active:scale-95 w-full md:w-auto overflow-hidden"
+                  >
+                    <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></span>
+                    <div className="flex items-center justify-center gap-3 text-white">
+                      <Gamepad2 className="w-6 h-6 animate-bounce" />
+                      <span>Download FREE & Start Earning</span>
+                    </div>
+                  </a>
+                  
+                  <div className="text-left bg-slate-800/80 backdrop-blur border border-slate-700 p-4 rounded-xl flex items-center gap-3">
+                    <div className="text-yellow-400">
+                        <Zap className="w-8 h-8 fill-yellow-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">Bonus Ends In</p>
+                      <p className="font-orbitron text-xl font-bold text-white tabular-nums">
+                        {formatTime(timeLeft.hours)}:{formatTime(timeLeft.minutes)}:{formatTime(timeLeft.seconds)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap justify-center gap-4 text-sm text-slate-400 opacity-80">
+                  <span className="flex items-center gap-1"><span className="text-green-500">✓</span> Tailored for YOUR country</span>
+                  <span className="flex items-center gap-1"><span className="text-green-500">✓</span> No Credit Card Required</span>
+                  <span className="flex items-center gap-1"><span className="text-green-500">✓</span> Instant Digital Delivery</span>
+                </div>
+              </motion.div>
+            </div>
+          </section>
+        );
+      };
+
+      const HowItWorks: React.FC = () => {
+        const steps = [
+          {
+            icon: <Smartphone className="w-12 h-12 text-blue-400" />,
+            title: "1. Play Games",
+            desc: "Browse our curated list of games tailored to your interests.",
+            color: "bg-blue-500/20 border-blue-500/50"
+          },
+          {
+            icon: <Trophy className="w-12 h-12 text-yellow-400" />,
+            title: "2. Earn Units",
+            desc: "Rack up Units as you play. The more you play, the more you earn!",
+            color: "bg-yellow-500/20 border-yellow-500/50"
+          },
+          {
+            icon: <Gift className="w-12 h-12 text-purple-400" />,
+            title: "3. Redeem Rewards",
+            desc: "Cash out immediately for Amazon, PayPal, Visa, and more.",
+            color: "bg-purple-500/20 border-purple-500/50"
+          }
+        ];
+
+        return (
+          <section className="py-20 bg-slate-950 relative overflow-hidden">
+              <div className="container mx-auto px-4 relative z-10">
+                  <div className="text-center mb-16">
+                      <h2 className="text-4xl font-orbitron font-bold mb-4">How It <span className="text-purple-400">Works</span></h2>
+                      <p className="text-slate-400 text-lg max-w-2xl mx-auto">Start earning your first reward in less than 10 minutes with our simple 3-step process.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                      {steps.map((step, idx) => (
+                          <motion.div
+                              key={idx}
+                              initial={{ opacity: 0, y: 50 }}
+                              whileInView={{ opacity: 1, y: 0 }}
+                              transition={{ delay: idx * 0.2 }}
+                              viewport={{ once: true }}
+                              className={`p-8 rounded-2xl border ${step.color} backdrop-blur-sm relative group hover:bg-opacity-30 transition-all duration-300`}
+                          >
+                              <div className="bg-slate-900 rounded-full w-24 h-24 flex items-center justify-center mb-6 mx-auto shadow-[0_0_20px_rgba(0,0,0,0.5)] group-hover:scale-110 transition-transform duration-300">
+                                  {step.icon}
+                              </div>
+                              <h3 className="text-2xl font-bold font-orbitron mb-3 text-center">{step.title}</h3>
+                              <p className="text-slate-400 text-center leading-relaxed">{step.desc}</p>
+                              
+                              {idx !== 2 && (
+                                  <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-1 bg-slate-700 transform -translate-y-1/2 z-[-1]" />
+                              )}
+                          </motion.div>
+                      ))}
+                  </div>
+                  
+                  <div className="mt-16 text-center">
+                      <div className="inline-block bg-slate-900 border border-slate-700 rounded-lg px-6 py-3">
+                          <ul className="flex flex-col md:flex-row gap-4 md:gap-8 text-sm font-semibold text-slate-300">
+                              <li className="flex items-center gap-2">🎯 Daily Missions</li>
+                              <li className="flex items-center gap-2">🏆 Global Leaderboards</li>
+                              <li className="flex items-center gap-2">🚫 No In-App Purchases Needed</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+          </section>
+        );
+      };
+
+      const Rewards: React.FC = () => {
+        return (
+          <section className="py-24 bg-gradient-to-b from-slate-900 to-slate-950">
+            <div className="container mx-auto px-4">
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-20">
+                  {STATS.map((stat, i) => (
+                      <div key={i} className="bg-slate-800/50 p-6 rounded-xl border border-slate-700/50 text-center hover:border-purple-500/50 transition-colors">
+                          <stat.icon className="w-8 h-8 mx-auto mb-2 text-purple-400" />
+                          <div className="text-3xl font-black font-orbitron text-white mb-1">{stat.value}</div>
+                          <div className="text-sm text-slate-400 uppercase tracking-wider">{stat.label}</div>
+                      </div>
+                  ))}
+                  <div className="bg-gradient-to-br from-purple-600 to-blue-600 p-6 rounded-xl text-center flex flex-col items-center justify-center transform scale-105 shadow-xl">
+                      <span className="font-orbitron font-bold text-xl text-white">#1 Reward App</span>
+                      <span className="text-xs text-white/80">In 5 Countries</span>
+                  </div>
+              </div>
+
+              <div className="text-center mb-12">
+                  <h2 className="text-4xl font-orbitron font-bold text-white mb-4">Rewards Showcase</h2>
+                  <p className="text-blue-400 font-semibold tracking-wide uppercase">Redeem in minutes!</p>
+              </div>
+
+              {/* Scrolling Cards */}
+              <div className="relative w-full overflow-hidden h-[300px] mb-20 flex items-center">
+                  <div className="absolute left-0 top-0 w-20 h-full bg-gradient-to-r from-slate-900 to-transparent z-10 pointer-events-none" />
+                  <div className="absolute right-0 top-0 w-20 h-full bg-gradient-to-l from-slate-900 to-transparent z-10 pointer-events-none" />
+                  
+                  <motion.div 
+                      className="flex gap-8 absolute"
+                      animate={{ x: [0, -1000] }}
+                      transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+                  >
+                      {[...GIFT_CARDS, ...GIFT_CARDS, ...GIFT_CARDS].map((card, idx) => (
+                          <div key={idx} className="w-[280px] h-[160px] flex-shrink-0 perspective-1000 group cursor-pointer">
+                              <div className={`relative w-full h-full rounded-2xl shadow-2xl transition-all duration-500 transform group-hover:scale-105 bg-gradient-to-br ${card.color} p-6 flex flex-col justify-between overflow-hidden border border-white/10`}>
+                                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+                                  
+                                  <div className="flex justify-between items-start z-10">
+                                      <span className="font-bold text-xl text-white shadow-black drop-shadow-md">{card.name}</span>
+                                      <span className="font-orbitron font-black text-2xl text-white shadow-black drop-shadow-md">{card.value}</span>
+                                  </div>
+                                  <div className="flex justify-between items-end z-10">
+                                      <div className="text-xs text-white/80 tracking-widest font-bold">DIGITAL CODE</div>
+                                      <div className="w-10 h-6 bg-yellow-400/20 rounded border border-yellow-400/50" />
+                                  </div>
+                              </div>
+                          </div>
+                      ))}
+                  </motion.div>
+              </div>
+
+              {/* Testimonials */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  {TESTIMONIALS.map((t) => (
+                      <div key={t.id} className="bg-slate-800 p-6 rounded-2xl border border-slate-700 relative">
+                          <div className="absolute -top-4 -right-4 bg-purple-600 rounded-full p-2">
+                              <Star className="w-4 h-4 text-white fill-current" />
+                          </div>
+                          <div className="flex items-center gap-4 mb-4">
+                              <img src={t.avatar} alt={t.name} className="w-12 h-12 rounded-full border-2 border-purple-500" />
+                              <div>
+                                  <h4 className="font-bold text-white">{t.name}</h4>
+                                  <span className="text-xs text-slate-400 flex items-center gap-1">
+                                      {t.country === 'USA' ? '🇺🇸' : t.country === 'AU' ? '🇦🇺' : '🇰🇷'} Verified Player
+                                  </span>
+                              </div>
+                          </div>
+                          <p className="text-slate-300 italic">"{t.text}"</p>
+                          <div className="flex mt-3 text-yellow-500">
+                              {[...Array(t.rating)].map((_, i) => <Star key={i} className="w-4 h-4 fill-current" />)}
+                          </div>
+                      </div>
+                  ))}
+              </div>
+            </div>
+          </section>
+        );
+      };
+
+      const AiGameMatcher: React.FC = () => {
+        const [mood, setMood] = useState('');
+        const [recommendation, setRecommendation] = useState<string | null>(null);
+        const [loading, setLoading] = useState(false);
+
+        const handleRecommend = async () => {
+          if (!mood) return;
+          setLoading(true);
+          setRecommendation(null);
+
+          try {
+            const apiKey = process.env.API_KEY || ''; 
+            const ai = new GoogleGenAI({ apiKey });
+            
+            const prompt = `
+              I am a user looking for mobile game recommendations to earn money on Mistplay.
+              My current mood or interest is: "${mood}".
+              Recommend 1 specific genre of mobile game (e.g., Puzzle, RPG, Strategy, Slot) that fits this mood and explain in one short, exciting sentence why it's fun to play and earn. 
+              Don't mention specific game titles, just the genre.
+              Keep it under 30 words. Enthusiastic tone.
+            `;
+
+            const response = await ai.models.generateContent({
+              model: 'gemini-2.5-flash',
+              contents: prompt,
+            });
+
+            setRecommendation(response.text || "Try Strategy games for big rewards!");
+          } catch (error) {
+            console.error("AI Error:", error);
+            setRecommendation("Strategy games! They challenge your mind while you rack up points fast.");
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        return (
+          <section className="py-20 relative bg-slate-900 overflow-hidden border-y border-purple-900/30">
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
+            
+            <div className="container mx-auto px-4 relative z-10 flex flex-col md:flex-row items-center gap-12">
+              <div className="flex-1">
+                <div className="inline-flex items-center gap-2 text-purple-400 font-bold mb-2">
+                  <Sparkles className="w-5 h-5 animate-pulse" />
+                  <span>AI Game Concierge</span>
+                </div>
+                <h2 className="text-4xl md:text-5xl font-orbitron font-bold mb-6 text-white">
+                  Not sure what to play? <br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">Ask the AI!</span>
+                </h2>
+                <p className="text-slate-400 text-lg mb-8">
+                  Tell us your mood (e.g., "Relaxed", "Competitive", "Bored"), and our Gemini-powered AI will find the perfect paying game genre for you.
+                </p>
+
+                <div className="bg-slate-800 p-2 rounded-xl flex gap-2 border border-slate-700 shadow-2xl max-w-md">
+                  <input 
+                    type="text" 
+                    placeholder="How are you feeling today?" 
+                    className="bg-transparent text-white px-4 py-3 flex-1 outline-none placeholder:text-slate-500"
+                    value={mood}
+                    onChange={(e) => setMood(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleRecommend()}
+                  />
+                  <button 
+                    onClick={handleRecommend}
+                    disabled={loading || !mood}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-bold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? <Loader className="w-4 h-4 animate-spin" /> : <Bot className="w-5 h-5" />}
+                  </button>
+                </div>
+
+                {recommendation && (
+                  <div className="mt-8 bg-gradient-to-r from-purple-900/50 to-blue-900/50 border border-purple-500/30 p-6 rounded-xl animate-fade-in-up">
+                    <h3 className="text-purple-300 font-bold text-sm uppercase mb-2">AI Suggestion:</h3>
+                    <p className="text-xl text-white font-medium italic">"{recommendation}"</p>
+                    <a href={SMART_LINK} className="inline-flex items-center gap-2 text-yellow-400 font-bold mt-4 hover:underline">
+                      Find these games now <ArrowRight className="w-4 h-4" />
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 flex justify-center relative">
+                <div className="relative w-80 h-80">
+                    <div className="absolute inset-0 bg-purple-500 rounded-full blur-[100px] opacity-20 animate-pulse"></div>
+                    <img src="https://picsum.photos/400/400?random=20" alt="AI Robot" className="relative z-10 w-full h-full object-cover rounded-3xl shadow-2xl border-4 border-slate-800 rotate-3 hover:rotate-0 transition-transform duration-500" />
+                    
+                    <div className="absolute -bottom-6 -left-6 bg-slate-800 border border-slate-700 p-4 rounded-xl shadow-xl z-20 flex items-center gap-3">
+                      <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                      <div className="text-sm">
+                          <div className="font-bold text-white">Gemini 2.5 Flash</div>
+                          <div className="text-slate-400 text-xs">Powered Intelligence</div>
+                      </div>
+                    </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        );
+      };
+
+      const StickyFooter: React.FC = () => {
+        const [isVisible, setIsVisible] = useState(false);
+
+        useEffect(() => {
+          const handleScroll = () => {
+            if (window.scrollY > 400) {
+              setIsVisible(true);
+            } else {
+              setIsVisible(false);
+            }
+          };
+          window.addEventListener('scroll', handleScroll);
+          return () => window.removeEventListener('scroll', handleScroll);
+        }, []);
+
+        return (
+          <AnimatePresence>
+            {isVisible && (
+              <motion.div
+                initial={{ y: 100 }}
+                animate={{ y: 0 }}
+                exit={{ y: 100 }}
+                className="fixed bottom-0 left-0 w-full z-50 p-4 bg-gradient-to-t from-slate-900 to-slate-900/95 backdrop-blur-lg border-t border-purple-500/30"
+              >
+                <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div className="hidden md:block">
+                    <p className="text-white font-bold text-lg">Don't miss out on free cash! 💸</p>
+                    <p className="text-slate-400 text-sm">Join 10,000+ users who installed today.</p>
+                  </div>
+                  
+                  <a 
+                    href={SMART_LINK}
+                    className="w-full md:w-auto flex items-center justify-center gap-3 bg-gradient-to-r from-yellow-500 to-orange-600 text-black font-black font-orbitron py-4 px-8 rounded-full shadow-lg hover:shadow-[0_0_30px_rgba(234,179,8,0.6)] transition-all transform hover:scale-105"
+                  >
+                    <Download className="w-6 h-6" />
+                    INSTALL NOW & GET BONUS UNITS
+                    <ChevronRight className="w-5 h-5" />
+                  </a>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        );
+      };
+
+      // --- Main App ---
+
+      const App: React.FC = () => {
+        return (
+          <div className="min-h-screen bg-slate-900 text-slate-50 font-sans selection:bg-purple-500 selection:text-white">
+            
+            <nav className="absolute top-0 left-0 w-full z-50 px-6 py-4 flex justify-between items-center">
+              <div className="text-2xl font-black font-orbitron tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 cursor-pointer">
+                PLAY<span className="text-white">2</span>REWARDS
+              </div>
+              <a 
+                href={SMART_LINK}
+                className="hidden md:block bg-white/10 hover:bg-white/20 backdrop-blur border border-white/20 text-white px-6 py-2 rounded-full font-bold transition-all text-sm"
+              >
+                Sign In
+              </a>
+            </nav>
+
+            <main>
+              <Hero />
+              <HowItWorks />
+              <Rewards />
+              <AiGameMatcher />
+              
+              <footer className="bg-black py-12 pb-32 border-t border-slate-800">
+                <div className="container mx-auto px-4 text-center">
+                  <div className="text-2xl font-black font-orbitron text-slate-600 mb-6">PLAY2REWARDS</div>
+                  <div className="flex justify-center gap-6 text-slate-500 text-sm mb-8">
+                    <a href="#" className="hover:text-purple-400 transition-colors">Privacy Policy</a>
+                    <a href="#" className="hover:text-purple-400 transition-colors">Terms of Service</a>
+                    <a href="#" className="hover:text-purple-400 transition-colors">Support</a>
+                  </div>
+                  <p className="text-slate-600 text-xs">
+                    © {new Date().getFullYear()} Play2Rewards. All rights reserved. <br/>
+                    Powered by Adbleu Media. Not affiliated with Google, Amazon, or PayPal.
+                  </p>
+                </div>
+              </footer>
+            </main>
+
+            <StickyFooter />
+          </div>
+        );
+      };
+
+      const rootElement = document.getElementById('root');
+      if (!rootElement) {
+        throw new Error("Could not find root element to mount to");
+      }
+
+      const root = ReactDOM.createRoot(rootElement);
+      root.render(
+        <React.StrictMode>
+          <App />
+        </React.StrictMode>
+      );
+    </script>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
